@@ -35,6 +35,9 @@ jobs:
       - name: Sinkronisasi Capacitor
         run: npx cap sync android
 
+            - name: Pastikan gradlew bisa dijalankan
+        run: chmod +x android/gradlew
+
       - name: Build APK debug
         working-directory: android
         run: ./gradlew assembleDebug
