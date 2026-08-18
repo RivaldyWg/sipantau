@@ -1,0 +1,112 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* =====================================================================
+   Palet warna SiPANTAU — docs/CLAUDE.md §7.2
+   Diisi sejak awal, SEBELUM komponen Shadcn pertama ditambahkan, agar
+   Shadcn tidak memakai palet bawaannya sendiri (lihat §7.2).
+
+   Berkas docs/si-pantau-prototype.html BELUM diterima saat berkas ini
+   ditulis (Langkah 3) — nilai di bawah HANYA delapan token warna yang
+   memang tertulis literal di CLAUDE.md. Bentuk kartu, radius, bayangan,
+   dan jarak antar unsur masih memakai nilai wajar sementara, BUKAN
+   hasil menyalin prototype. Sesuaikan begitu berkas itu diterima,
+   jangan anggap ini arah desain final (§7.1: "Dilarang membuat arah
+   desain baru").
+   ===================================================================== */
+
+:root {
+  --sp-navy: #0f1c32;
+  --sp-primary: #1b2a4a;
+  --sp-gold: #f5a623;
+  --sp-bg: #f4f6f9;
+  --sp-blue: #2563eb;
+  --sp-amber: #d97706;
+  --sp-green: #059669;
+  --sp-red: #dc2626;
+
+  --radius: 0.5rem;
+
+  --background: var(--sp-bg);
+  --foreground: var(--sp-navy);
+
+  --card: #ffffff;
+  --card-foreground: var(--sp-navy);
+
+  --popover: #ffffff;
+  --popover-foreground: var(--sp-navy);
+
+  --primary: var(--sp-primary);
+  --primary-foreground: #ffffff;
+
+  --secondary: #e6e9ef;
+  --secondary-foreground: var(--sp-navy);
+
+  --muted: #e6e9ef;
+  --muted-foreground: #5b6472;
+
+  --accent: var(--sp-gold);
+  --accent-foreground: var(--sp-navy);
+
+  --destructive: var(--sp-red);
+  --destructive-foreground: #ffffff;
+
+  --border: #d9dee6;
+  --input: #d9dee6;
+  --ring: var(--sp-gold);
+
+  /* Lencana status — bukan token Shadcn baku, dipakai langsung lewat
+     utilitas Tailwind arbitrer (mis. bg-[var(--status-baru)]) pada
+     lencana status SPT/laporan. */
+  --status-baru: var(--sp-blue);
+  --status-berjalan: var(--sp-amber);
+  --status-selesai: var(--sp-green);
+  --status-bermasalah: var(--sp-red);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+}
+
+* {
+  border-color: var(--border);
+}

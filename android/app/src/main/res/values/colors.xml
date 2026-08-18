@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Palet SiPANTAU — sesuai docs/CLAUDE.md §7.2 -->
+    <color name="colorPrimary">#1B2A4A</color>
+    <color name="colorPrimaryDark">#0F1C32</color>
+    <color name="colorAccent">#F5A623</color>
+</resources>
