@@ -18,13 +18,11 @@ const config: CapacitorConfig = {
   appName: "SiPANTAU",
   webDir: "cap-fallback",
 
-  server: {
-    // Ganti dengan URL Vercel setelah deploy.
-    // Selama belum ada, APK menampilkan halaman fallback dari webDir.
-    // url: "https://sipantau.vercel.app",
+server: {
+    // URL Vercel produksi — diisi setelah deploy berhasil (Langkah 5/6).
+    url: "https://sipantau-six.vercel.app",
     androidScheme: "https",
   },
-
   android: {
     // Izinkan mixed content untuk development
     allowMixedContent: false,
