@@ -3,7 +3,7 @@ import { Suspense } from "react";
 
 import { wajibkanSudahSiap } from "@/lib/auth/pengguna";
 import { menuUntukPeran } from "@/lib/auth/menu";
-import { BilahSamping } from "@/components/sipantau/bilah-samping";
+import { KerangkaAplikasi } from "@/components/sipantau/kerangka-aplikasi";
 import { PesanSekilasKewenangan } from "@/components/sipantau/pesan-sekilas-kewenangan";
 
 /**
@@ -19,19 +19,25 @@ import { PesanSekilasKewenangan } from "@/components/sipantau/pesan-sekilas-kewe
  */
 export default async function TataLetakApp({
   children,
-}: {
+}: Readonly<{
   children: ReactNode;
-}) {
+}>) {
   const { pengguna } = await wajibkanSudahSiap();
   const menu = menuUntukPeran(pengguna.peran);
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <BilahSamping menu={menu} nama={pengguna.nama} peran={pengguna.peran} />
-      <main className="flex-1 overflow-y-auto p-6">{children}</main>
-      <Suspense fallback={null}>
+    <>
+      <KerangkaAplikasi menu={menu} nama={pengguna.nama} peran={pengguna.peran}>
+        {children}
+      </KerangkaAplikasi>
+      {/* 
+        Meskipun PesanSekilasKewenangan berjalan secara asinkron (karena
+        menggunakan server-side flash message/cookies), kita bungkus
+        dengan Suspense agar tidak memblokir render utama halaman.
+      */}
+      <Suspense fallback={<div className="hidden" aria-hidden="true" />}>
         <PesanSekilasKewenangan />
       </Suspense>
-    </div>
+    </>
   );
 }

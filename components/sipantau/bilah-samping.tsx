@@ -19,20 +19,39 @@ const LABEL_PERAN: Record<string, string> = {
  * Bilah samping navy — docs/CLAUDE.md §7.2. Hanya merender butir
  * milik peran yang sedang masuk (KP-6.1-18: unsur di luar kewenangan
  * TIDAK dirender sama sekali, bukan dinonaktifkan).
+ *
+ * Di layar sempit (< breakpoint md Tailwind, 768px) ini menjadi laci
+ * geser (drawer) yang disembunyikan di luar layar sampai dibuka lewat
+ * tombol hamburger di KerangkaAplikasi — tanpa ini, lebar tetap 256px
+ * "memakan" sebagian besar layar HP dan menyisakan konten yang
+ * terpotong sempit. Ditemukan lewat pengujian di perangkat fisik
+ * sungguhan (bukan cuma tangkapan layar), bukan diperkirakan di atas
+ * kertas. Di layar lebar (md ke atas) tetap statis dan selalu tampak
+ * seperti semula.
  */
 export function BilahSamping({
   menu,
   nama,
   peran,
+  terbuka,
+  onTutup,
 }: {
   menu: ButirMenu[];
   nama: string;
   peran: string;
+  terbuka: boolean;
+  onTutup: () => void;
 }) {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col bg-[var(--sp-navy)] text-white">
+    <aside
+      className={cn(
+        "fixed inset-y-0 left-0 z-50 flex h-full w-64 shrink-0 flex-col bg-[var(--sp-navy)] text-white transition-transform duration-200 ease-in-out",
+        "md:static md:z-auto md:translate-x-0",
+        terbuka ? "translate-x-0" : "-translate-x-full",
+      )}
+    >
       <div className="flex items-center gap-2 px-5 py-5">
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--sp-gold)] text-sm font-bold text-[var(--sp-navy)]">
           SP
@@ -55,6 +74,7 @@ export function BilahSamping({
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  onClick={onTutup}
                   className={cn(
                     "block rounded-md px-3 py-2 text-sm font-medium transition-colors",
                     aktif

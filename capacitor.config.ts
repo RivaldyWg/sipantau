@@ -18,7 +18,7 @@ const config: CapacitorConfig = {
   appName: "SiPANTAU",
   webDir: "cap-fallback",
 
-server: {
+  server: {
     // URL Vercel produksi — diisi setelah deploy berhasil (Langkah 5/6).
     url: "https://sipantau-six.vercel.app",
     androidScheme: "https",
