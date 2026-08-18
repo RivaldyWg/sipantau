@@ -35,6 +35,13 @@ jobs:
       - name: Sinkronisasi Capacitor
         run: npx cap sync android
 
+      - name: Pastikan gradlew bisa dijalankan
+        # Hak akses "bisa dieksekusi" pada gradlew sering hilang saat
+        # berkas disalin manual (mis. ekstrak zip lalu drag-and-drop di
+        # Windows). Baris ini memperbaikinya di setiap build, jadi tidak
+        # bergantung pada hak akses berkas di repo.
+        run: chmod +x android/gradlew
+
       - name: Build APK debug
         working-directory: android
         run: ./gradlew assembleDebug
