@@ -82,9 +82,36 @@ export function berandaUntukPeran(peran: Peran): string {
  * KP-6.1-19: penyembunyian tampilan saja tidak dianggap pengamanan,
  * tapi ini lapisan kedua di atas RLS, bukan pengganti RLS).
  */
+/**
+ * Sub-rute yang dikunci ke peran tertentu, DIPERIKSA LEBIH DULU
+ * daripada pencocokan awalan biasa.
+ *
+ * Kenapa perlu: butir menu "Daftar SPT" memakai cocokAwalan agar
+ * /penugasan/<id> ikut dianggap aktif. Tanpa daftar ini, awalan yang
+ * sama juga meloloskan /penugasan/terbitkan untuk SEMUA peran —
+ * padahal butir "Terbitkan SPT" hanya ada pada menu Kanit. Ditemukan
+ * saat Langkah 6 (rute /penugasan/[id] dibuat); RLS memang tetap
+ * menolak insert oleh non-Kanit, jadi ini bukan kebocoran data, tetapi
+ * KP-6.1-17 mensyaratkan tautan langsung ikut dijaga, bukan hanya
+ * tautannya disembunyikan di bilah samping (KP-6.1-19).
+ *
+ * Cocok bila pathname sama persis ATAU merupakan sub-rute di bawahnya,
+ * supaya /penugasan/terbitkan/langkah-2 kelak ikut terjaga.
+ */
+const RUTE_KHUSUS_PERAN: { awalan: string; peran: Peran[] }[] = [
+  { awalan: "/penugasan/terbitkan", peran: ["kanit"] },
+];
+
 export function bolehAksesRute(peran: Peran, pathname: string): boolean {
   if (peran === "pemeliharaan") {
     return pathname === "/pemeliharaan";
+  }
+
+  const khusus = RUTE_KHUSUS_PERAN.find(
+    (r) => pathname === r.awalan || pathname.startsWith(`${r.awalan}/`),
+  );
+  if (khusus) {
+    return khusus.peran.includes(peran);
   }
 
   const menu = menuUntukPeran(peran);

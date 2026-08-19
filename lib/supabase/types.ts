@@ -26,3 +26,129 @@ export interface PenggunaRow {
   dibuat_pada: string;
   diubah_pada: string;
 }
+
+/* =====================================================================
+ * Modul 6.2 — Penugasan (Langkah 6)
+ *
+ * Mengikuti kolom pada migrasi:
+ *   0008_amandemen_unit_dan_tabel_penugasan.sql  (tabel penugasan)
+ *   0009_tabel_penugasan_anak.sql                (empat tabel anak)
+ *   0014_view_penugasan_tampil_dan_pgcron.sql    (tampilan penugasan_tampil)
+ * ===================================================================== */
+
+export type JenisKegiatan = "penyelidikan" | "pulbaket" | "pengamanan";
+
+export type PrioritasPenugasan = "normal" | "penting" | "urgent";
+
+export type StatusPenugasan =
+  | "draf"
+  | "baru"
+  | "berjalan"
+  | "bermasalah"
+  | "selesai"
+  | "dibatalkan";
+
+export type JenisDasarPenugasan =
+  | "laporan_informasi"
+  | "laporan_polisi"
+  | "laporan_pengaduan"
+  | "surat_perintah_terdahulu"
+  | "disposisi_pimpinan"
+  | "lainnya";
+
+export interface PenugasanRow {
+  id: string;
+  nomor_spt: string | null;
+  jenis_kegiatan: JenisKegiatan;
+  judul: string;
+  objek: string | null;
+  sasaran: string | null;
+  uraian_tugas: string | null;
+  nomor_lp: string | null;
+  sumber_informasi: string | null;
+  unit_id: string;
+  prioritas: PrioritasPenugasan;
+  status: StatusPenugasan;
+  tanggal_mulai: string | null;
+  tanggal_batas: string | null;
+  berkas_surat_path: string | null;
+  diterbitkan_oleh: string | null;
+  ditugaskan_oleh: string | null;
+  diterbitkan_pada: string | null;
+  ditutup_oleh: string | null;
+  ditutup_pada: string | null;
+  dibatalkan_oleh: string | null;
+  dibatalkan_pada: string | null;
+  alasan_pembatalan: string | null;
+  lewat_batas_diberitahukan_pada: string | null;
+  dibuat_pada: string;
+  diubah_pada: string;
+}
+
+/**
+ * Tampilan penugasan_tampil = seluruh kolom penugasan + dua kolom
+ * turunan yang DIHITUNG SAAT KUERI (migrasi 0014, catatan desain 1).
+ *
+ * Halaman WAJIB membaca tampilan ini, bukan tabel `penugasan`
+ * langsung, supaya penanda lewat batas ikut terbawa.
+ *
+ * `hari_terlampaui` bernilai negatif bila tanggal batas belum lewat,
+ * dan null bila tanggal_batas kosong — jangan ditampilkan mentah.
+ */
+export interface PenugasanTampilRow extends PenugasanRow {
+  lewat_batas: boolean | null;
+  hari_terlampaui: number | null;
+}
+
+export interface PenugasanDasarRow {
+  id: string;
+  penugasan_id: string;
+  urutan: number;
+  jenis: JenisDasarPenugasan;
+  nomor: string | null;
+  tanggal: string | null;
+  keterangan: string | null;
+  dibuat_pada: string;
+  diubah_pada: string;
+}
+
+export interface PenugasanLokasiRow {
+  id: string;
+  penugasan_id: string;
+  urutan: number;
+  nama: string;
+  alamat: string | null;
+  keterangan: string | null;
+  lat: number | null;
+  lng: number | null;
+  radius_meter: number | null;
+  dibuat_pada: string;
+  diubah_pada: string;
+}
+
+export interface PenugasanPelaksanaRow {
+  id: string;
+  penugasan_id: string;
+  pelaksana_id: string;
+  urutan: number;
+  ditugaskan_pada: string;
+  dibaca_pada: string | null;
+  dicabut_pada: string | null;
+  dicabut_oleh: string | null;
+  alasan_pencabutan: string | null;
+  dibuat_pada: string;
+  diubah_pada: string;
+}
+
+export interface PenugasanPanitRow {
+  id: string;
+  penugasan_id: string;
+  panit_id: string;
+  ditunjuk_oleh: string | null;
+  ditunjuk_pada: string;
+  dicabut_pada: string | null;
+  dicabut_oleh: string | null;
+  alasan_pencabutan: string | null;
+  dibuat_pada: string;
+  diubah_pada: string;
+}
