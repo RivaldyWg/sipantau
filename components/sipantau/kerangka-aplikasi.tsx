@@ -1,26 +1,33 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Menu, X } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { BilahSamping } from "./bilah-samping";
+import { HeaderAplikasi } from "./header-aplikasi";
+import { BilahBawah } from "./bilah-bawah";
 import type { ButirMenu } from "@/lib/auth/menu";
 
 /**
  * Pembungkus sisi klien untuk kerangka app/(app)/layout.tsx.
  *
- * Menyimpan status buka/tutup bilah samping (BilahSamping) sebagai
- * laci geser di layar sempit, dan menampilkan bilah atas kecil khusus
- * HP (tombol hamburger + nama aplikasi) yang disembunyikan di layar
- * lebar lewat md:hidden — di layar lebar BilahSamping tetap statis
- * seperti semula, bilah atas ini tidak dirender sama sekali.
+ * Ditulis ulang mengikuti struktur tiga-tingkat #sb/#hd/#bb pada
+ * si-pantau-mockup-v2.html (docs/CLAUDE.md §7.2, lihat komentar besar
+ * di app/globals.css) — MENGGANTIKAN percobaan sebelumnya (laci
+ * hamburger sederhana tanpa rel-ikon maupun bilah bawah) yang dibuat
+ * sebelum berkas mockup ditemukan di antara dokumen Proyek:
  *
- * Ditambahkan setelah ditemukan lewat pengujian di perangkat fisik:
- * tanpa ini, bilah samping selebar tetap 256px menyisakan konten
- * yang terpotong sempit di layar HP (docs/CLAUDE.md §7.2 tidak
- * menyebut perilaku responsif secara eksplisit, tapi kegunaan di
- * perangkat genggam adalah premis dasar seluruh proyek ini — lihat
- * docs/00-fondasi.md).
+ *   - lebar (>1024px): bilah samping penuh, selalu terlihat
+ *   - sedang (768-1024px): otomatis mengecil jadi rel ikon lewat CSS
+ *     saja; tombol menu di header bisa memaksanya penuh lagi lewat
+ *     kelas "mini" (dua arah — bukan cuma checkbox satu arah)
+ *   - sempit (<768px): bilah samping jadi laci geser (kelas "laci"),
+ *     navigasi utama berpindah ke bilah bawah (#bb)
+ *
+ * "mini" dan "laci" sengaja dua state terpisah (bukan satu enum)
+ * karena keduanya independen: tombol menu yang sama memicu salah
+ * satu tergantung lebar layar saat ditekan (persis tekanMenu() pada
+ * mockup), diperiksa lewat window.innerWidth di dalam pawang klik.
  */
 export function KerangkaAplikasi({
   menu,
@@ -33,44 +40,41 @@ export function KerangkaAplikasi({
   peran: string;
   children: ReactNode;
 }) {
-  const [terbuka, setTerbuka] = useState(false);
+  const [laci, setLaci] = useState(false);
+  const [mini, setMini] = useState(false);
+
+  function tekanMenu() {
+    if (typeof window !== "undefined" && window.innerWidth <= 768) {
+      setLaci((v) => !v);
+    } else {
+      setMini((v) => !v);
+    }
+  }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div
+      className={cn(
+        "sp-shell",
+        `peran-${peran}`,
+        mini && "mini",
+        laci && "laci",
+      )}
+    >
       <BilahSamping
         menu={menu}
         nama={nama}
         peran={peran}
-        terbuka={terbuka}
-        onTutup={() => setTerbuka(false)}
+        onNavigasi={() => setLaci(false)}
       />
 
-      {terbuka && (
-        <button
-          type="button"
-          aria-label="Tutup menu"
-          onClick={() => setTerbuka(false)}
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
-        />
-      )}
+      <div className="sp-tirai" onClick={() => setLaci(false)} />
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-3 bg-[var(--sp-navy)] px-4 py-3 text-white md:hidden">
-          <button
-            type="button"
-            aria-label={terbuka ? "Tutup menu" : "Buka menu"}
-            onClick={() => setTerbuka((v) => !v)}
-            className="rounded-md p-1.5 hover:bg-white/10"
-          >
-            {terbuka ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-          <span className="text-sm font-semibold">SiPANTAU</span>
-        </header>
-
-        <main className="min-w-0 flex-1 overflow-y-auto p-4 md:p-6">
-          {children}
-        </main>
+      <div className="sp-rangka">
+        <HeaderAplikasi menu={menu} nama={nama} onTekanMenu={tekanMenu} />
+        <main className="sp-utama">{children}</main>
       </div>
+
+      <BilahBawah menu={menu} />
     </div>
   );
 }

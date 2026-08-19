@@ -52,22 +52,16 @@ export function FormulirMasuk() {
     });
   }
 
-  return (
-    <form onSubmit={kirim} className="flex flex-col gap-5" noValidate>
-      <div className="flex flex-col items-center gap-1 pb-2 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--sp-primary)] text-lg font-bold text-white">
-          SP
-        </div>
-        <h1 className="mt-2 text-lg font-semibold text-foreground">
-          SiPANTAU
-        </h1>
-        <p className="text-xs text-muted-foreground">
-          Sistem Pengawasan Unit I Subdit IV
-        </p>
-      </div>
+  const kelasMasukan =
+    "h-11 w-full rounded-[var(--r-sm)] border border-[var(--line-2)] px-3 text-base outline-none transition-all duration-200 focus:border-[var(--primary)] focus:shadow-[0_0_0_3px_rgba(27,42,74,0.08)] disabled:opacity-50";
 
+  return (
+    <form onSubmit={kirim} className="flex flex-col gap-[15px]" noValidate>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="nrp" className="text-sm font-medium text-foreground">
+        <label
+          htmlFor="nrp"
+          className="text-xs font-semibold text-[var(--ink-2)]"
+        >
           NRP
         </label>
         <input
@@ -79,7 +73,7 @@ export function FormulirMasuk() {
           value={nrp}
           onChange={(e) => setNrp(e.target.value)}
           disabled={pending}
-          className="h-11 rounded-md border border-input bg-transparent px-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+          className={kelasMasukan}
           placeholder="Contoh: 87654321"
         />
       </div>
@@ -87,7 +81,7 @@ export function FormulirMasuk() {
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="kata_sandi"
-          className="text-sm font-medium text-foreground"
+          className="text-xs font-semibold text-[var(--ink-2)]"
         >
           Kata sandi
         </label>
@@ -100,12 +94,12 @@ export function FormulirMasuk() {
             value={kataSandi}
             onChange={(e) => setKataSandi(e.target.value)}
             disabled={pending}
-            className="h-11 w-full rounded-md border border-input bg-transparent px-3 pr-16 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+            className={`${kelasMasukan} pr-16`}
           />
           <button
             type="button"
             onClick={() => setTampilkanSandi((v) => !v)}
-            className="absolute inset-y-0 right-0 px-3 text-xs font-medium text-muted-foreground hover:text-foreground"
+            className="absolute inset-y-0 right-0 px-3 text-xs font-medium text-[var(--ink-3)] hover:text-[var(--ink)]"
             tabIndex={-1}
           >
             {tampilkanSandi ? "Sembunyikan" : "Perlihatkan"}
@@ -116,17 +110,21 @@ export function FormulirMasuk() {
       {error && (
         <p
           role="alert"
-          className="rounded-md bg-[var(--sp-red)]/10 px-3 py-2 text-sm text-[var(--sp-red)]"
+          className="rounded-[var(--r-sm)] bg-[var(--red-bg)] px-3 py-2 text-sm text-[var(--red)]"
         >
           {error}
         </p>
       )}
 
-      <Button type="submit" size="lg" disabled={pending} className="w-full">
+      <Button
+        type="submit"
+        disabled={pending}
+        className="mt-1 h-[46px] w-full rounded-[var(--r-sm)] bg-[var(--primary)] text-[14px] font-semibold text-white transition-colors hover:bg-[var(--navy)]"
+      >
         {pending ? "Memproses…" : "Masuk"}
       </Button>
 
-      <p className="text-center text-xs text-muted-foreground">
+      <p className="text-center text-xs text-[var(--ink-3)]">
         Lupa kata sandi? Hubungi Kanit unit Anda.
       </p>
     </form>

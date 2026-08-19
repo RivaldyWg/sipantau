@@ -2,66 +2,106 @@
 @import "tw-animate-css";
 
 /* =====================================================================
-   Palet warna SiPANTAU — docs/CLAUDE.md §7.2
-   Diisi sejak awal, SEBELUM komponen Shadcn pertama ditambahkan, agar
-   Shadcn tidak memakai palet bawaannya sendiri (lihat §7.2).
+   Palet & token desain SiPANTAU — docs/CLAUDE.md §7.2
 
-   Berkas docs/si-pantau-prototype.html BELUM diterima saat berkas ini
-   ditulis (Langkah 3) — nilai di bawah HANYA delapan token warna yang
-   memang tertulis literal di CLAUDE.md. Bentuk kartu, radius, bayangan,
-   dan jarak antar unsur masih memakai nilai wajar sementara, BUKAN
-   hasil menyalin prototype. Sesuaikan begitu berkas itu diterima,
-   jangan anggap ini arah desain final (§7.1: "Dilarang membuat arah
-   desain baru").
+   Sejak Langkah 3 sampai sebelum ini, docs/si-pantau-prototype.html
+   belum diterima, jadi hanya delapan token warna literal CLAUDE.md
+   yang dipakai. Berkas acuan sungguhan sudah diterima (di Proyek
+   sebagai "si-pantau-mockup-v2.html") dan sekarang menjadi pemenang
+   untuk BENTUK dan RASA sesuai catatan di kepala berkas itu sendiri:
+   "Untuk BENTUK dan RASA → berkas ini yang menang; untuk ATURAN dan
+   DATA → PRD yang menang". Token di bawah adalah salinan LITERAL
+   dari :root pada mockup itu (warna, radius, bayangan, transisi,
+   ukuran bilah samping/header) — nama --sp-* lama dipertahankan agar
+   berkas lain yang sudah memakainya (mis. app/(auth)/layout.tsx)
+   tidak perlu diubah, sebagai alias ke token baru.
    ===================================================================== */
 
 :root {
-  --sp-navy: #0f1c32;
-  --sp-primary: #1b2a4a;
-  --sp-gold: #f5a623;
-  --sp-bg: #f4f6f9;
-  --sp-blue: #2563eb;
-  --sp-amber: #d97706;
-  --sp-green: #059669;
-  --sp-red: #dc2626;
-
-  --radius: 0.5rem;
-
-  --background: var(--sp-bg);
-  --foreground: var(--sp-navy);
-
+  /* --- token literal dari mockup --- */
+  --navy: #0f1c32;
+  --navy-2: #16253f;
+  --primary: #1b2a4a;
+  --gold: #f5a623;
+  --bg: #f4f6f9;
   --card: #ffffff;
-  --card-foreground: var(--sp-navy);
+  --line: #e2e7ef;
+  --line-2: #cbd5e1;
+  --ink: #0f1c32;
+  --ink-2: #475569;
+  --ink-3: #94a3b8;
+  --blue: #2563eb;
+  --amber: #d97706;
+  --green: #059669;
+  --red: #dc2626;
+  --blue-bg: #dbeafe;
+  --amber-bg: #fef3c7;
+  --green-bg: #d1fae5;
+  --red-bg: #fee2e2;
+
+  --sb: 264px;
+  --sb-mini: 76px;
+  --hd: 64px;
+  --r: 10px;
+  --r-sm: 6px;
+
+  --sh: 0 1px 2px rgba(15, 28, 50, 0.06), 0 1px 3px rgba(15, 28, 50, 0.04);
+  --sh-md: 0 4px 12px rgba(15, 28, 50, 0.08);
+  --sh-lg: 0 12px 32px rgba(15, 28, 50, 0.16);
+  --t: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Fon disajikan sendiri lewat paket @fontsource/* yang diimpor di
+     app/layout.tsx (bukan <link> ke fonts.googleapis.com saat
+     runtime) — lihat komentar di app/layout.tsx untuk alasan lengkap. */
+  --display: "Barlow Condensed", system-ui, sans-serif;
+  --body: "Inter", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* --- alias lama, dipertahankan --- */
+  --sp-navy: var(--navy);
+  --sp-primary: var(--primary);
+  --sp-gold: var(--gold);
+  --sp-bg: var(--bg);
+  --sp-blue: var(--blue);
+  --sp-amber: var(--amber);
+  --sp-green: var(--green);
+  --sp-red: var(--red);
+
+  --radius: var(--r);
+
+  --background: var(--bg);
+  --foreground: var(--ink);
+
+  --card-foreground: var(--ink);
 
   --popover: #ffffff;
-  --popover-foreground: var(--sp-navy);
+  --popover-foreground: var(--ink);
 
-  --primary: var(--sp-primary);
   --primary-foreground: #ffffff;
 
   --secondary: #e6e9ef;
-  --secondary-foreground: var(--sp-navy);
+  --secondary-foreground: var(--ink);
 
   --muted: #e6e9ef;
-  --muted-foreground: #5b6472;
+  --muted-foreground: var(--ink-2);
 
-  --accent: var(--sp-gold);
-  --accent-foreground: var(--sp-navy);
+  --accent: var(--gold);
+  --accent-foreground: var(--navy);
 
-  --destructive: var(--sp-red);
+  --destructive: var(--red);
   --destructive-foreground: #ffffff;
 
-  --border: #d9dee6;
-  --input: #d9dee6;
-  --ring: var(--sp-gold);
+  --border: var(--line);
+  --input: var(--line-2);
+  --ring: var(--gold);
 
   /* Lencana status — bukan token Shadcn baku, dipakai langsung lewat
      utilitas Tailwind arbitrer (mis. bg-[var(--status-baru)]) pada
      lencana status SPT/laporan. */
-  --status-baru: var(--sp-blue);
-  --status-berjalan: var(--sp-amber);
-  --status-selesai: var(--sp-green);
-  --status-bermasalah: var(--sp-red);
+  --status-baru: var(--blue);
+  --status-berjalan: var(--amber);
+  --status-selesai: var(--green);
+  --status-bermasalah: var(--red);
 }
 
 @theme inline {
@@ -88,25 +128,566 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--body);
+  --font-display: var(--display);
+  --font-mono: var(--mono);
+
+  --radius-sm: calc(var(--r) - 4px);
+  --radius-md: calc(var(--r) - 2px);
+  --radius-lg: var(--r);
+  --radius-xl: calc(var(--r) + 4px);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family:
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    Helvetica,
-    Arial,
-    sans-serif;
+  font-family: var(--body);
 }
 
 * {
   border-color: var(--border);
+}
+
+/* =====================================================================
+   KOMPONEN KERANGKA APLIKASI — diporting literal dari selector #sb,
+   #hd, #rangka, .nav-i, #bb, #fab pada si-pantau-mockup-v2.html.
+
+   Diskop ke .sp-shell (bukan langsung ke body seperti mockup, yang
+   memakai body.mini/body.laci) supaya berdampingan dengan komponen
+   Next.js lain tanpa memanipulasi className <body> — lihat
+   components/sipantau/kerangka-aplikasi.tsx.
+
+   #spanduk (banner pratinjau demo untuk berpindah peran) SENGAJA
+   tidak diporting: itu perkakas demo mockup, bukan bagian aplikasi
+   sungguhan (KP-6.1-18 dkk. sudah menegakkan menu per peran secara
+   nyata, tidak perlu ditiru di sini).
+   ===================================================================== */
+
+.sp-shell {
+  position: relative;
+  min-height: 100vh;
+}
+
+.sp-sb {
+  position: fixed;
+  inset-block: 0;
+  left: 0;
+  width: var(--sb);
+  background: var(--navy);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  transition:
+    width var(--t),
+    transform var(--t);
+}
+
+.sp-sb-merek {
+  height: var(--hd);
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+}
+.sp-sb-tanda {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--gold);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--navy);
+  letter-spacing: -0.02em;
+}
+.sp-sb-nama {
+  font-family: var(--display);
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #fff;
+  line-height: 1;
+  white-space: nowrap;
+}
+.sp-sb-nama small {
+  display: block;
+  font-family: var(--body);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  color: rgba(255, 255, 255, 0.42);
+  margin-top: 3px;
+  text-transform: uppercase;
+}
+
+.sp-sb-orang {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+}
+.sp-av {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+  color: #fff;
+}
+.sp-sb-orang .sp-meta {
+  min-width: 0;
+  flex: 1;
+}
+.sp-sb-orang .sp-nm {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sp-sb-orang .sp-rl {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-top: 2px;
+  color: var(--gold);
+}
+
+.sp-sb-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 12px 20px;
+}
+.sp-nav-i {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+  border-radius: var(--r-sm);
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 13.5px;
+  font-weight: 500;
+  width: 100%;
+  text-align: left;
+  position: relative;
+  transition: all var(--t);
+  margin-bottom: 2px;
+}
+.sp-nav-i:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.92);
+}
+.sp-nav-i.on {
+  background: rgba(245, 166, 35, 0.12);
+  color: #fff;
+  font-weight: 600;
+}
+.sp-nav-i.on::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  background: var(--gold);
+  border-radius: 0 3px 3px 0;
+}
+.sp-nav-i svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  stroke-width: 1.9;
+}
+.sp-nav-i .sp-lbl {
+  white-space: nowrap;
+  overflow: hidden;
+  flex: 1;
+}
+
+.sp-sb-kaki {
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+}
+
+/* mode mini (rel ikon saja) — dipicu manual lewat tombol menu di
+   header, atau otomatis di lebar tablet lewat media query di bawah */
+.sp-shell.mini .sp-sb {
+  width: var(--sb-mini);
+}
+.sp-shell.mini .sp-sb-nama,
+.sp-shell.mini .sp-sb-orang .sp-meta,
+.sp-shell.mini .sp-nav-i .sp-lbl {
+  display: none;
+}
+.sp-shell.mini .sp-sb-merek,
+.sp-shell.mini .sp-sb-orang {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+.sp-shell.mini .sp-nav-i {
+  justify-content: center;
+  padding: 11px 0;
+}
+.sp-shell.mini .sp-nav-i.on::before {
+  left: 0;
+}
+.sp-shell.mini .sp-rangka {
+  margin-left: var(--sb-mini);
+}
+
+.sp-rangka {
+  margin-left: var(--sb);
+  min-height: 100vh;
+  transition: margin-left var(--t);
+}
+
+.sp-hd {
+  height: var(--hd);
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 60;
+}
+.sp-ikon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-sm);
+  display: grid;
+  place-items: center;
+  color: var(--ink-2);
+  transition: all var(--t);
+  flex-shrink: 0;
+  position: relative;
+}
+.sp-ikon-btn:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+.sp-ikon-btn svg {
+  width: 19px;
+  height: 19px;
+  stroke-width: 1.9;
+}
+.sp-jejak {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--ink-3);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.sp-jejak .sep {
+  opacity: 0.5;
+}
+.sp-jejak .kini {
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sp-hd-kanan {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.sp-lonceng-titik {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--red);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  border: 2px solid var(--card);
+}
+
+.sp-utama {
+  padding: 24px;
+}
+
+/* laci geser (mobile) + tirai */
+.sp-tirai {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 28, 50, 0.5);
+  z-index: 95;
+  display: none;
+}
+.sp-shell.laci .sp-tirai {
+  display: block;
+}
+
+/* FAB + bilah bawah — hanya tampak di layar sempit (lihat media query) */
+.sp-fab {
+  position: fixed;
+  right: 18px;
+  bottom: 82px;
+  z-index: 80;
+  width: 54px;
+  height: 54px;
+  border-radius: 17px;
+  background: var(--gold);
+  color: var(--navy);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 22px rgba(245, 166, 35, 0.4);
+  transition: all var(--t);
+}
+.sp-fab svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 2.2;
+}
+
+.sp-bb {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 62px;
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  display: none;
+  z-index: 90;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.sp-bb a {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--ink-3);
+  font-size: 10px;
+  font-weight: 600;
+  transition: color var(--t);
+  position: relative;
+}
+.sp-bb a svg {
+  width: 21px;
+  height: 21px;
+  stroke-width: 1.9;
+}
+.sp-bb a.on {
+  color: var(--primary);
+}
+.sp-bb a.on::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 26px;
+  height: 2.5px;
+  background: var(--gold);
+  border-radius: 0 0 3px 3px;
+}
+
+/* --- 1024px: rel-ikon otomatis, boleh dipaksa penuh lewat .mini --- */
+@media (max-width: 1024px) {
+  .sp-shell:not(.mini) .sp-sb {
+    width: var(--sb-mini);
+  }
+  .sp-shell:not(.mini) .sp-sb-nama,
+  .sp-shell:not(.mini) .sp-sb-orang .sp-meta,
+  .sp-shell:not(.mini) .sp-nav-i .sp-lbl {
+    display: none;
+  }
+  .sp-shell:not(.mini) .sp-sb-merek,
+  .sp-shell:not(.mini) .sp-sb-orang {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .sp-shell:not(.mini) .sp-nav-i {
+    justify-content: center;
+    padding: 11px 0;
+  }
+  .sp-shell:not(.mini) .sp-rangka {
+    margin-left: var(--sb-mini);
+  }
+
+  .sp-shell.mini .sp-sb {
+    width: var(--sb);
+  }
+  .sp-shell.mini .sp-sb-nama,
+  .sp-shell.mini .sp-nav-i .sp-lbl {
+    display: block;
+  }
+  .sp-shell.mini .sp-sb-orang .sp-meta {
+    display: block;
+  }
+  .sp-shell.mini .sp-sb-merek,
+  .sp-shell.mini .sp-sb-orang {
+    justify-content: flex-start;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .sp-shell.mini .sp-nav-i {
+    justify-content: flex-start;
+    padding: 9px 10px;
+  }
+  .sp-shell.mini .sp-rangka {
+    margin-left: var(--sb);
+  }
+}
+
+/* --- 768px: bilah samping jadi laci geser, header+navigasi ringkas,
+   bilah bawah + FAB menggantikan navigasi utama --- */
+@media (max-width: 768px) {
+  .sp-sb {
+    transform: translateX(-100%);
+    width: var(--sb) !important;
+    box-shadow: var(--sh-lg);
+  }
+  .sp-sb .sp-sb-nama,
+  .sp-sb .sp-nav-i .sp-lbl {
+    display: block !important;
+  }
+  .sp-sb .sp-sb-orang .sp-meta {
+    display: block !important;
+  }
+  .sp-sb .sp-sb-merek,
+  .sp-sb .sp-sb-orang {
+    justify-content: flex-start !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+  .sp-sb .sp-nav-i {
+    justify-content: flex-start !important;
+    padding: 9px 10px !important;
+  }
+  .sp-shell.laci .sp-sb {
+    transform: translateX(0);
+  }
+
+  .sp-rangka {
+    margin-left: 0 !important;
+  }
+  .sp-hd {
+    padding: 0 14px;
+    gap: 9px;
+  }
+  .sp-utama {
+    padding: 14px 14px calc(78px + env(safe-area-inset-bottom));
+  }
+
+  .sp-bb {
+    display: flex;
+  }
+  .sp-shell.peran-anggota .sp-fab {
+    display: flex;
+  }
+}
+
+@media (min-width: 769px) {
+  .sp-fab,
+  .sp-bb {
+    display: none !important;
+  }
+}
+
+/* =====================================================================
+   HALAMAN MASUK — diporting literal dari selector #masuk pada mockup.
+   Diskop ke .sp-masuk (bukan #masuk) supaya tidak bentrok dengan id.
+   Formulir "pilih peran" & "spanduk demo" pada mockup TIDAK diporting
+   (itu perkakas pratinjau demo, bukan bagian PRD 6.1: masuk sungguhan
+   memang hanya NRP + kata sandi — lihat docs/10-modul-6.1-auth.md).
+   ===================================================================== */
+
+.sp-masuk-panggung {
+  min-height: 100vh;
+  background: var(--navy);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.sp-masuk-kotak {
+  width: 100%;
+  max-width: 404px;
+}
+.sp-masuk-lambang {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: var(--gold);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 22px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--navy);
+  letter-spacing: -0.02em;
+}
+.sp-masuk-kotak h1 {
+  font-family: var(--display);
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  color: #fff;
+  text-align: center;
+  line-height: 1;
+}
+.sp-masuk-kotak .sp-sub {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.44);
+  text-align: center;
+  margin-top: 8px;
+}
+.sp-masuk-satuan {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.62);
+  text-align: center;
+  margin-top: 20px;
+  line-height: 1.6;
+}
+.sp-masuk-form {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 26px;
+  margin-top: 26px;
+  box-shadow: var(--sh-lg);
+}
+.sp-masuk-kaki {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.34);
+  text-align: center;
+  margin-top: 22px;
+  line-height: 1.6;
 }

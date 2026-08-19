@@ -23,6 +23,7 @@ const config: CapacitorConfig = {
     url: "https://sipantau-six.vercel.app",
     androidScheme: "https",
   },
+
   android: {
     // Izinkan mixed content untuk development
     allowMixedContent: false,

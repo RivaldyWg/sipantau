@@ -19,9 +19,9 @@ import { PesanSekilasKewenangan } from "@/components/sipantau/pesan-sekilas-kewe
  */
 export default async function TataLetakApp({
   children,
-}: Readonly<{
+}: {
   children: ReactNode;
-}>) {
+}) {
   const { pengguna } = await wajibkanSudahSiap();
   const menu = menuUntukPeran(pengguna.peran);
 
@@ -30,12 +30,7 @@ export default async function TataLetakApp({
       <KerangkaAplikasi menu={menu} nama={pengguna.nama} peran={pengguna.peran}>
         {children}
       </KerangkaAplikasi>
-      {/* 
-        Meskipun PesanSekilasKewenangan berjalan secara asinkron (karena
-        menggunakan server-side flash message/cookies), kita bungkus
-        dengan Suspense agar tidak memblokir render utama halaman.
-      */}
-      <Suspense fallback={<div className="hidden" aria-hidden="true" />}>
+      <Suspense fallback={null}>
         <PesanSekilasKewenangan />
       </Suspense>
     </>

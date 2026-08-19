@@ -2,9 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  ClipboardList,
+  Map as MapIcon,
+  Inbox,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { KeluarTombol } from "./keluar-tombol";
+import { inisialNama } from "@/lib/utils/inisial";
 import type { ButirMenu } from "@/lib/auth/menu";
 
 const LABEL_PERAN: Record<string, string> = {
@@ -16,84 +25,99 @@ const LABEL_PERAN: Record<string, string> = {
 };
 
 /**
- * Bilah samping navy — docs/CLAUDE.md §7.2. Hanya merender butir
- * milik peran yang sedang masuk (KP-6.1-18: unsur di luar kewenangan
- * TIDAK dirender sama sekali, bukan dinonaktifkan).
+ * Bilah samping navy — bentuknya diporting literal dari selector #sb
+ * pada si-pantau-mockup-v2.html (docs/CLAUDE.md §7.2; lihat komentar
+ * besar di app/globals.css). Hanya merender butir milik peran yang
+ * sedang masuk (KP-6.1-18: unsur di luar kewenangan TIDAK dirender
+ * sama sekali, bukan dinonaktifkan) — daftar butirnya sendiri tetap
+ * dari lib/auth/menu.ts (ATURAN/DATA, bukan dari mockup).
  *
- * Di layar sempit (< breakpoint md Tailwind, 768px) ini menjadi laci
- * geser (drawer) yang disembunyikan di luar layar sampai dibuka lewat
- * tombol hamburger di KerangkaAplikasi — tanpa ini, lebar tetap 256px
- * "memakan" sebagian besar layar HP dan menyisakan konten yang
- * terpotong sempit. Ditemukan lewat pengujian di perangkat fisik
- * sungguhan (bukan cuma tangkapan layar), bukan diperkirakan di atas
- * kertas. Di layar lebar (md ke atas) tetap statis dan selalu tampak
- * seperti semula.
+ * Tiga keadaan lebar diatur lewat kelas pada pembungkus .sp-shell
+ * (lihat kerangka-aplikasi.tsx), BUKAN di sini:
+ *   - lebar (>1024px): penuh, selalu terlihat
+ *   - sedang (768-1024px): otomatis mengecil jadi rel ikon, bisa
+ *     dipaksa penuh lewat tombol menu di header (kelas .mini)
+ *   - sempit (<768px): laci geser dari luar layar (kelas .laci)
  */
 export function BilahSamping({
   menu,
   nama,
   peran,
-  terbuka,
-  onTutup,
+  onNavigasi,
 }: {
   menu: ButirMenu[];
   nama: string;
   peran: string;
-  terbuka: boolean;
-  onTutup: () => void;
+  onNavigasi: () => void;
 }) {
   const pathname = usePathname();
 
   return (
-    <aside
-      className={cn(
-        "fixed inset-y-0 left-0 z-50 flex h-full w-64 shrink-0 flex-col bg-[var(--sp-navy)] text-white transition-transform duration-200 ease-in-out",
-        "md:static md:z-auto md:translate-x-0",
-        terbuka ? "translate-x-0" : "-translate-x-full",
-      )}
-    >
-      <div className="flex items-center gap-2 px-5 py-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--sp-gold)] text-sm font-bold text-[var(--sp-navy)]">
-          SP
-        </div>
-        <div>
-          <p className="text-sm font-semibold leading-tight">SiPANTAU</p>
-          <p className="text-xs leading-tight text-white/60">
-            {LABEL_PERAN[peran] ?? peran}
-          </p>
+    <aside className="sp-sb">
+      <div className="sp-sb-merek">
+        <div className="sp-sb-tanda">SP</div>
+        <div className="sp-sb-nama">
+          SI PANTAU
+          <small>Subdit IV Ditreskrimsus</small>
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-2">
-        <ul className="flex flex-col gap-0.5">
-          {menu.map((item) => {
-            const aktif = item.cocokAwalan
-              ? pathname.startsWith(item.href)
-              : pathname === item.href;
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  onClick={onTutup}
-                  className={cn(
-                    "block rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                    aktif
-                      ? "bg-[var(--sp-gold)] text-[var(--sp-navy)]"
-                      : "text-white/80 hover:bg-white/10 hover:text-white",
-                  )}
-                >
-                  {item.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+      <div className="sp-sb-orang">
+        <div
+          className="sp-av"
+          style={{ background: "var(--gold)", color: "var(--navy)" }}
+        >
+          {inisialNama(nama)}
+        </div>
+        <div className="sp-meta">
+          <div className="sp-nm">{nama}</div>
+          <div className="sp-rl">{LABEL_PERAN[peran] ?? peran}</div>
+        </div>
+      </div>
+
+      <nav className="sp-sb-nav">
+        {menu.map((item) => {
+          const aktif = item.cocokAwalan
+            ? pathname.startsWith(item.href)
+            : pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onNavigasi}
+              className={cn("sp-nav-i", aktif && "on")}
+            >
+              <IkonMenu href={item.href} />
+              <span className="sp-lbl">{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
 
-      <div className="border-t border-white/10 px-3 py-3">
-        <p className="truncate px-3 pb-2 text-xs text-white/50">{nama}</p>
+      <div className="sp-sb-kaki">
         <KeluarTombol />
       </div>
     </aside>
   );
+}
+
+/**
+ * lib/auth/menu.ts belum menyimpan nama ikon per butir (itu detail
+ * BENTUK, bukan ATURAN) — dicocokkan lewat awalan rute di sini,
+ * meniru padanan ikon per menu pada mockup (dasbor/spt/masuk_kotak/
+ * peta/orang). Boleh diperkaya lagi nanti (KARANGAN).
+ */
+const IKON_PER_AWALAN: Array<[string, LucideIcon]> = [
+  ["/beranda", LayoutDashboard],
+  ["/penugasan", ClipboardList],
+  ["/peta", MapIcon],
+  ["/laporan", Inbox],
+  ["/akun", Users],
+];
+
+function IkonMenu({ href }: { href: string }) {
+  const Ikon =
+    IKON_PER_AWALAN.find(([awalan]) => href.startsWith(awalan))?.[1] ??
+    LayoutDashboard;
+  return <Ikon />;
 }
