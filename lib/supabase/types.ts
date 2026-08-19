@@ -152,3 +152,44 @@ export interface PenugasanPanitRow {
   dibuat_pada: string;
   diubah_pada: string;
 }
+
+/* =====================================================================
+ * Modul 6.2 lanjutan — perpanjangan dan penandaan bermasalah
+ * Mengikuti migrasi 0015_tabel_perpanjangan_dan_masalah.sql
+ * ===================================================================== */
+
+export interface PenugasanPerpanjanganRow {
+  id: string;
+  penugasan_id: string;
+  tanggal_batas_lama: string | null;
+  tanggal_batas_baru: string;
+  alasan: string;
+  diubah_oleh: string;
+  dibuat_pada: string;
+}
+
+/**
+ * Daftar jenis masalah masih SEMENTARA — Lampiran A butir A-11 belum
+ * terjawab pemilik produk. Bila daftarnya berubah, ubah CHECK pada
+ * migrasi 0015 LEBIH DULU, baru tipe ini.
+ */
+export type JenisMasalah =
+  | "alamat_atau_sasaran_fiktif"
+  | "objek_tidak_ditemukan"
+  | "informasi_awal_tidak_sesuai"
+  | "situasi_tidak_memungkinkan"
+  | "sasaran_berpindah"
+  | "kendala_perangkat_atau_jaringan"
+  | "lainnya";
+
+export interface PenugasanMasalahRow {
+  id: string;
+  penugasan_id: string;
+  jenis_masalah: JenisMasalah;
+  uraian: string;
+  ditandai_oleh: string;
+  ditandai_pada: string;
+  dipulihkan_oleh: string | null;
+  dipulihkan_pada: string | null;
+  alasan_pemulihan: string | null;
+}

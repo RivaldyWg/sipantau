@@ -8,39 +8,43 @@ import {
   LencanaStatus,
   PenandaLewatBatas,
 } from "@/components/sipantau/lencana-penugasan";
+import { PetaTitik } from "@/components/sipantau/peta-titik";
 import {
   LABEL_JENIS_DASAR,
   LABEL_JENIS_KEGIATAN,
+  LABEL_JENIS_MASALAH,
   koordinat,
   tanggalIndonesia,
   waktuIndonesia,
 } from "@/lib/penugasan/label";
+import { inisialNama } from "@/lib/utils/inisial";
 import type {
   PenugasanDasarRow,
   PenugasanLokasiRow,
+  PenugasanMasalahRow,
+  PenugasanPerpanjanganRow,
   PenugasanTampilRow,
 } from "@/lib/supabase/types";
+import { catatTandaTerima } from "./aksi";
+import { tautanSurat } from "./aksi-surat";
+import { PanelTindakan } from "./panel-tindakan";
 
 /**
- * Rincian SPT — mockup HAL.rincian().
+ * Rincian Penugasan — §6.2.5.
  *
- * Dibuat sebagai rute tersendiri (bukan state di halaman daftar
- * seperti mockup) supaya tautan ke satu SPT bisa dikirim ke orang
- * lain, bertahan saat halaman dimuat ulang, dan tombol Back peramban
- * bekerja per langkah.
+ * "Badan halaman: keterangan penugasan, daftar dasar penugasan, peta
+ *  dengan seluruh titik bernomor beserta lingkaran radiusnya, daftar
+ *  Panit Penanggung Jawab, daftar pelaksana beserta penanda sudah atau
+ *  belum membuka, rekam kegiatan, riwayat perpanjangan, serta kotak
+ *  berkas surat perintah."
  *
- * KEAMANAN — kenapa cukup notFound():
- * RLS "penugasan_baca_sesuai_lingkup" memotong baris di server. SPT
- * di luar kewenangan pembaca akan pulang sebagai nol baris, sama
- * persis dengan id yang memang tidak ada. Halaman ini karena itu
- * TIDAK boleh membedakan pesannya ("bukan hak Anda" vs "tidak
- * ditemukan") — perbedaan pesan itu sendiri membocorkan keberadaan
- * SPT unit lain.
+ * "Rekam kegiatan" SENGAJA belum ada — isinya laporan harian Modul 6.3
+ * yang tabelnya baru lahir Langkah 7.
  *
- * Bagian "Rekam kegiatan" pada mockup SENGAJA belum ada di sini:
- * isinya laporan harian (Modul 6.3) yang tabelnya baru dibangun pada
- * Langkah 7. Yang ditampilkan sekarang adalah empat tabel anak yang
- * sudah hidup: dasar, lokasi, pelaksana, panit.
+ * KEAMANAN: RLS memotong baris di server, sehingga SPT di luar
+ * kewenangan pulang sebagai nol baris — sama persis dengan id yang
+ * tidak ada. Halaman ini karena itu TIDAK boleh membedakan pesannya;
+ * perbedaan pesan itu sendiri membocorkan keberadaan SPT unit lain.
  */
 
 interface ParamHalaman {
@@ -51,16 +55,19 @@ interface BarisOrang {
   id: string;
   urutan?: number;
   dibaca_pada?: string | null;
-  ditunjuk_pada?: string;
-  orang: { nama: string; nrp: string; pangkat: string | null } | null;
+  orang: {
+    id: string;
+    nama: string;
+    nrp: string;
+    pangkat: string | null;
+    aktif: boolean;
+  } | null;
 }
 
 export default async function HalamanRincianSpt({ params }: ParamHalaman) {
   const { pengguna } = await wajibkanSudahSiap();
   const { id } = await params;
 
-  // Id yang bukan UUID akan membuat Postgres melempar galat tipe,
-  // bukan mengembalikan nol baris — dipotong lebih dulu di sini.
   const berbentukUuid =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
   if (!berbentukUuid) notFound();
@@ -75,43 +82,77 @@ export default async function HalamanRincianSpt({ params }: ParamHalaman) {
 
   if (!spt) notFound();
 
-  const [dasar, lokasi, pelaksana, panit, unit] = await Promise.all([
-    supabase
-      .from("penugasan_dasar")
-      .select("id, urutan, jenis, nomor, tanggal, keterangan")
-      .eq("penugasan_id", id)
-      .order("urutan")
-      .returns<PenugasanDasarRow[]>(),
-    supabase
-      .from("penugasan_lokasi")
-      .select("id, urutan, nama, alamat, keterangan, lat, lng, radius_meter")
-      .eq("penugasan_id", id)
-      .order("urutan")
-      .returns<PenugasanLokasiRow[]>(),
-    supabase
-      .from("penugasan_pelaksana")
-      .select(
-        "id, urutan, dibaca_pada, orang:pelaksana_id(nama, nrp, pangkat)",
-      )
-      .eq("penugasan_id", id)
-      .is("dicabut_pada", null)
-      .order("urutan")
-      .returns<BarisOrang[]>(),
-    supabase
-      .from("penugasan_panit")
-      .select("id, ditunjuk_pada, orang:panit_id(nama, nrp, pangkat)")
-      .eq("penugasan_id", id)
-      .is("dicabut_pada", null)
-      .returns<BarisOrang[]>(),
-    supabase
-      .from("unit")
-      .select("nama")
-      .eq("id", spt.unit_id)
-      .maybeSingle<{ nama: string }>(),
-  ]);
+  // B.9: "Tanda terima tercatat otomatis saat pelaksana membuka
+  // rincian SPT." Fungsi database diam saja bila pemanggilnya bukan
+  // pelaksana, jadi tidak perlu dijaga di sini.
+  await catatTandaTerima(id);
+
+  const [dasar, lokasi, pelaksana, panit, unit, perpanjangan, masalah] =
+    await Promise.all([
+      supabase
+        .from("penugasan_dasar")
+        .select("id, urutan, jenis, nomor, tanggal, keterangan")
+        .eq("penugasan_id", id)
+        .order("urutan")
+        .returns<PenugasanDasarRow[]>(),
+      supabase
+        .from("penugasan_lokasi")
+        .select("id, urutan, nama, alamat, keterangan, lat, lng, radius_meter")
+        .eq("penugasan_id", id)
+        .order("urutan")
+        .returns<PenugasanLokasiRow[]>(),
+      supabase
+        .from("penugasan_pelaksana")
+        .select(
+          "id, urutan, dibaca_pada, orang:pelaksana_id(id, nama, nrp, pangkat, aktif)",
+        )
+        .eq("penugasan_id", id)
+        .is("dicabut_pada", null)
+        .order("urutan")
+        .returns<BarisOrang[]>(),
+      supabase
+        .from("penugasan_panit")
+        .select("id, orang:panit_id(id, nama, nrp, pangkat, aktif)")
+        .eq("penugasan_id", id)
+        .is("dicabut_pada", null)
+        .returns<BarisOrang[]>(),
+      supabase
+        .from("unit")
+        .select("nama")
+        .eq("id", spt.unit_id)
+        .maybeSingle<{ nama: string }>(),
+      supabase
+        .from("penugasan_perpanjangan")
+        .select("id, tanggal_batas_lama, tanggal_batas_baru, alasan, dibuat_pada")
+        .eq("penugasan_id", id)
+        .order("dibuat_pada", { ascending: false })
+        .returns<PenugasanPerpanjanganRow[]>(),
+      supabase
+        .from("penugasan_masalah")
+        .select(
+          "id, jenis_masalah, uraian, ditandai_pada, dipulihkan_pada, alasan_pemulihan",
+        )
+        .eq("penugasan_id", id)
+        .order("ditandai_pada", { ascending: false })
+        .returns<PenugasanMasalahRow[]>(),
+    ]);
 
   const daftarPelaksana = pelaksana.data ?? [];
+  const daftarPanit = panit.data ?? [];
+  const daftarLokasi = lokasi.data ?? [];
+  const daftarMasalah = masalah.data ?? [];
   const sudahBaca = daftarPelaksana.filter((p) => p.dibaca_pada).length;
+
+  const bolehKelola =
+    pengguna.peran === "kanit" && pengguna.unit_id === spt.unit_id;
+  const akuPanitAktif = daftarPanit.some((p) => p.orang?.id === pengguna.id);
+  const akuPelaksana = daftarPelaksana.some((p) => p.orang?.id === pengguna.id);
+  const bolehBukaKembali = pengguna.peran === "kasubdit" || bolehKelola;
+  const adaMasalahTerbuka = daftarMasalah.some((m) => !m.dipulihkan_pada);
+
+  const urlSurat = spt.berkas_surat_path
+    ? await tautanSurat(spt.berkas_surat_path)
+    : null;
 
   return (
     <div className="flex flex-col gap-5">
@@ -142,6 +183,17 @@ export default async function HalamanRincianSpt({ params }: ParamHalaman) {
         </Link>
       </div>
 
+      <PanelTindakan
+        id={id}
+        status={spt.status}
+        tanggalBatas={spt.tanggal_batas}
+        adaBerkasSurat={Boolean(spt.berkas_surat_path)}
+        bolehKelola={bolehKelola}
+        bolehTandai={akuPanitAktif || akuPelaksana}
+        bolehBukaKembali={bolehBukaKembali}
+        adaMasalahTerbuka={adaMasalahTerbuka && bolehKelola}
+      />
+
       {spt.status === "dibatalkan" && spt.alasan_pembatalan && (
         <div className="rounded-lg border border-[var(--red)] bg-[var(--red-bg)] p-4 text-sm text-[var(--red)]">
           <strong className="font-semibold">Penugasan dibatalkan.</strong>{" "}
@@ -149,6 +201,7 @@ export default async function HalamanRincianSpt({ params }: ParamHalaman) {
         </div>
       )}
 
+      {/* Keterangan penugasan */}
       <section className="rounded-lg border border-border bg-card p-4">
         <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Butir label="Jenis kegiatan">
@@ -157,14 +210,10 @@ export default async function HalamanRincianSpt({ params }: ParamHalaman) {
           <Butir label="Satuan">{unit.data?.nama ?? "—"}</Butir>
           <Butir label="Sasaran">{spt.sasaran ?? "—"}</Butir>
           <Butir label="Mulai">{tanggalIndonesia(spt.tanggal_mulai)}</Butir>
-          <Butir label="Batas waktu">
-            {tanggalIndonesia(spt.tanggal_batas)}
-          </Butir>
+          <Butir label="Batas waktu">{tanggalIndonesia(spt.tanggal_batas)}</Butir>
           <Butir label="Nomor LP">{spt.nomor_lp ?? "—"}</Butir>
           <Butir label="Sumber informasi">{spt.sumber_informasi ?? "—"}</Butir>
-          <Butir label="Diterbitkan">
-            {waktuIndonesia(spt.diterbitkan_pada)}
-          </Butir>
+          <Butir label="Diterbitkan">{waktuIndonesia(spt.diterbitkan_pada)}</Butir>
           <Butir label="Tanda terima">
             {daftarPelaksana.length > 0
               ? `${sudahBaca} dari ${daftarPelaksana.length} pelaksana`
@@ -180,6 +229,60 @@ export default async function HalamanRincianSpt({ params }: ParamHalaman) {
             <p className="mt-1 whitespace-pre-line text-sm text-foreground">
               {spt.uraian_tugas}
             </p>
+          </div>
+        )}
+      </section>
+
+      {/* Peta titik bernomor beserta lingkaran radiusnya */}
+      <section className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <h2 className="text-sm font-semibold text-foreground">Titik lokasi</h2>
+          <span className="text-xs text-muted-foreground">
+            {daftarLokasi.length} titik, berurutan
+          </span>
+        </div>
+
+        {daftarLokasi.length === 0 ? (
+          <Kosong teks="Belum ada titik lokasi yang ditetapkan." />
+        ) : (
+          <div className="grid gap-0 lg:grid-cols-[1fr_320px]">
+            <div className="p-4">
+              <PetaTitik
+                titik={daftarLokasi.map((l) => ({
+                  nama: l.nama,
+                  lat: l.lat === null ? null : Number(l.lat),
+                  lng: l.lng === null ? null : Number(l.lng),
+                  radius_meter: l.radius_meter,
+                }))}
+                tinggi={300}
+              />
+            </div>
+
+            <ol className="divide-y divide-border border-t border-border lg:border-l lg:border-t-0">
+              {daftarLokasi.map((l) => (
+                <li key={l.id} className="flex gap-3 px-4 py-3">
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
+                    {l.urutan}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">{l.nama}</p>
+                    {l.alamat && (
+                      <p className="text-xs text-muted-foreground">{l.alamat}</p>
+                    )}
+                    <p className="font-mono text-xs text-muted-foreground">
+                      {koordinat(
+                        l.lat === null ? null : Number(l.lat),
+                        l.lng === null ? null : Number(l.lng),
+                      )}
+                      {l.radius_meter ? ` · radius ${l.radius_meter} m` : ""}
+                    </p>
+                    {l.keterangan && (
+                      <p className="mt-0.5 text-xs text-foreground">{l.keterangan}</p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
           </div>
         )}
       </section>
@@ -200,13 +303,10 @@ export default async function HalamanRincianSpt({ params }: ParamHalaman) {
                       {LABEL_JENIS_DASAR[d.jenis]}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {d.nomor ?? "Tanpa nomor"} ·{" "}
-                      {tanggalIndonesia(d.tanggal)}
+                      {d.nomor ?? "Tanpa nomor"} · {tanggalIndonesia(d.tanggal)}
                     </p>
                     {d.keterangan && (
-                      <p className="mt-1 text-xs text-foreground">
-                        {d.keterangan}
-                      </p>
+                      <p className="mt-1 text-xs text-foreground">{d.keterangan}</p>
                     )}
                   </div>
                 </li>
@@ -215,33 +315,36 @@ export default async function HalamanRincianSpt({ params }: ParamHalaman) {
           )}
         </Kartu>
 
-        <Kartu judul="Titik lokasi" jumlah={lokasi.data?.length ?? 0}>
-          {(lokasi.data ?? []).length === 0 ? (
-            <Kosong teks="Belum ada titik lokasi yang ditetapkan." />
+        <Kartu judul="Berkas surat perintah" jumlah={spt.berkas_surat_path ? 1 : 0}>
+          {spt.berkas_surat_path ? (
+            <div className="px-4 py-4">
+              <p className="text-sm text-foreground">
+                Pindaian surat perintah sudah dilampirkan.
+              </p>
+              {urlSurat ? (
+                <a
+                  href={urlSurat}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-flex h-9 items-center rounded-md border border-input px-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+                >
+                  Buka berkas
+                </a>
+              ) : (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Tautan berkas tidak dapat dibuat saat ini. Muat ulang halaman.
+                </p>
+              )}
+            </div>
           ) : (
-            <ol className="divide-y divide-border">
-              {(lokasi.data ?? []).map((l) => (
-                <li key={l.id} className="flex gap-3 px-4 py-3">
-                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-medium text-secondary-foreground">
-                    {l.urutan}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground">
-                      {l.nama}
-                    </p>
-                    {l.alamat && (
-                      <p className="text-xs text-muted-foreground">
-                        {l.alamat}
-                      </p>
-                    )}
-                    <p className="font-mono text-xs text-muted-foreground">
-                      {koordinat(l.lat, l.lng)}
-                      {l.radius_meter ? ` · radius ${l.radius_meter} m` : ""}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ol>
+            <div className="px-4 py-4">
+              <p className="text-sm text-muted-foreground">
+                Belum ada pindaian surat perintah.
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Penugasan tidak dapat ditutup sebelum berkas ini dilampirkan.
+              </p>
+            </div>
           )}
         </Kartu>
 
@@ -251,52 +354,92 @@ export default async function HalamanRincianSpt({ params }: ParamHalaman) {
           ) : (
             <ul className="divide-y divide-border">
               {daftarPelaksana.map((p) => (
-                <li
+                <BarisTim
                   key={p.id}
-                  className="flex items-center justify-between gap-3 px-4 py-3"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground">
-                      {p.orang?.nama ?? "—"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {p.orang?.pangkat ?? "—"} · {p.orang?.nrp ?? "—"}
-                    </p>
-                  </div>
-                  <span
-                    className={
-                      p.dibaca_pada
-                        ? "shrink-0 rounded-full bg-[var(--green-bg)] px-2.5 py-0.5 text-xs font-medium text-[var(--green)]"
-                        : "shrink-0 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground"
-                    }
-                  >
-                    {p.dibaca_pada ? "Sudah dibaca" : "Belum dibaca"}
-                  </span>
-                </li>
+                  orang={p.orang}
+                  kanan={
+                    <span
+                      className={
+                        p.dibaca_pada
+                          ? "shrink-0 rounded-full bg-[var(--green-bg)] px-2.5 py-0.5 text-xs font-medium text-[var(--green)]"
+                          : "shrink-0 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground"
+                      }
+                    >
+                      {p.dibaca_pada ? "Sudah membuka" : "Belum membuka"}
+                    </span>
+                  }
+                />
               ))}
             </ul>
           )}
         </Kartu>
 
-        <Kartu
-          judul="Panit Penanggung Jawab"
-          jumlah={panit.data?.length ?? 0}
-        >
-          {(panit.data ?? []).length === 0 ? (
+        <Kartu judul="Panit Penanggung Jawab" jumlah={daftarPanit.length}>
+          {daftarPanit.length === 0 ? (
             <Kosong teks="Belum ada Panit Penanggung Jawab yang ditunjuk." />
           ) : (
             <ul className="divide-y divide-border">
-              {(panit.data ?? []).map((p) => (
-                <li key={p.id} className="px-4 py-3">
-                  <p className="text-sm font-medium text-foreground">
-                    {p.orang?.nama ?? "—"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {p.orang?.pangkat ?? "—"} · {p.orang?.nrp ?? "—"}
-                  </p>
-                </li>
+              {daftarPanit.map((p) => (
+                <BarisTim key={p.id} orang={p.orang} />
               ))}
             </ul>
+          )}
+        </Kartu>
+
+        <Kartu judul="Riwayat perpanjangan" jumlah={perpanjangan.data?.length ?? 0}>
+          {(perpanjangan.data ?? []).length === 0 ? (
+            <Kosong teks="Batas waktu belum pernah diubah." />
+          ) : (
+            <ol className="divide-y divide-border">
+              {(perpanjangan.data ?? []).map((r) => (
+                <li key={r.id} className="px-4 py-3">
+                  <p className="text-sm text-foreground">
+                    {tanggalIndonesia(r.tanggal_batas_lama)} →{" "}
+                    <strong>{tanggalIndonesia(r.tanggal_batas_baru)}</strong>
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {waktuIndonesia(r.dibuat_pada)}
+                  </p>
+                  <p className="mt-1 text-xs text-foreground">{r.alasan}</p>
+                </li>
+              ))}
+            </ol>
+          )}
+        </Kartu>
+
+        <Kartu judul="Catatan keadaan" jumlah={daftarMasalah.length}>
+          {daftarMasalah.length === 0 ? (
+            <Kosong teks="Belum ada keadaan yang ditandai." />
+          ) : (
+            <ol className="divide-y divide-border">
+              {daftarMasalah.map((m) => (
+                <li key={m.id} className="px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-foreground">
+                      {LABEL_JENIS_MASALAH[m.jenis_masalah]}
+                    </span>
+                    {m.dipulihkan_pada ? (
+                      <span className="rounded-full bg-[var(--green-bg)] px-2.5 py-0.5 text-xs font-medium text-[var(--green)]">
+                        Sudah dikembalikan
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-[var(--amber-bg)] px-2.5 py-0.5 text-xs font-medium text-[var(--amber)]">
+                        Masih terbuka
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {waktuIndonesia(m.ditandai_pada)}
+                  </p>
+                  <p className="mt-1 text-xs text-foreground">{m.uraian}</p>
+                  {m.alasan_pemulihan && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Pengembalian: {m.alasan_pemulihan}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ol>
           )}
         </Kartu>
       </div>
@@ -304,20 +447,46 @@ export default async function HalamanRincianSpt({ params }: ParamHalaman) {
       <p className="text-xs text-muted-foreground">
         Rekam kegiatan dan laporan lapangan hadir pada Langkah 7 (Modul 6.3),
         setelah tabel laporan harian dibangun.
-        {pengguna.peran === "kanit" &&
-          " Penyuntingan dan penutupan penugasan menyusul pada langkah yang sama."}
       </p>
     </div>
   );
 }
 
-function Butir({
-  label,
-  children,
+function BarisTim({
+  orang,
+  kanan,
 }: {
-  label: string;
-  children: React.ReactNode;
+  orang: BarisOrang["orang"];
+  kanan?: React.ReactNode;
 }) {
+  return (
+    <li className="flex items-center justify-between gap-3 px-4 py-3">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+          {inisialNama(orang?.nama ?? "?")}
+        </span>
+        <div className="min-w-0">
+          <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+            {orang?.nama ?? "—"}
+            {/* 6.2.6: akun nonaktif ditampilkan dengan penandanya, barisnya
+                TIDAK dicabut dan laporannya tetap terhitung. */}
+            {orang && !orang.aktif && (
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                Akun nonaktif
+              </span>
+            )}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {orang?.pangkat ?? "—"} · {orang?.nrp ?? "—"}
+          </p>
+        </div>
+      </div>
+      {kanan}
+    </li>
+  );
+}
+
+function Butir({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
       <dt className="text-xs text-muted-foreground">{label}</dt>
@@ -347,5 +516,7 @@ function Kartu({
 }
 
 function Kosong({ teks }: { teks: string }) {
-  return <p className="px-4 py-6 text-center text-sm text-muted-foreground">{teks}</p>;
+  return (
+    <p className="px-4 py-6 text-center text-sm text-muted-foreground">{teks}</p>
+  );
 }

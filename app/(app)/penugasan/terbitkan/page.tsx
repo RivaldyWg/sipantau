@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { wajibkanSudahSiap } from "@/lib/auth/pengguna";
 import { klienServer } from "@/lib/supabase/server";
+import { kerangkaNomorSpt } from "@/lib/penugasan/label";
 import { FormulirTerbitkan } from "./formulir";
 
 /**
@@ -33,6 +34,14 @@ export default async function HalamanTerbitkanSpt() {
   // memang sudah membatasi Kanit ke unitnya, tetapi filter eksplisit
   // di sini membuat maksudnya terbaca dan tidak berubah diam-diam
   // kalau kebijakan baca users kelak dilonggarkan untuk keperluan lain.
+  // Kerangka nomor SPT butuh kode klasifikasi unitnya (A-12, masih
+  // menunggu nilai resmi). Bila kosong, bagian itu ikut berlubang.
+  const { data: unit } = await supabase
+    .from("unit")
+    .select("kode_klasifikasi")
+    .eq("id", pengguna.unit_id ?? "")
+    .maybeSingle<{ kode_klasifikasi: string | null }>();
+
   const { data: orang } = await supabase
     .from("users")
     .select("id, nama, nrp, pangkat, peran")
@@ -81,6 +90,7 @@ export default async function HalamanTerbitkanSpt() {
       <FormulirTerbitkan
         calonPanit={calonPanit}
         calonPelaksana={calonPelaksana}
+        kerangkaNomor={kerangkaNomorSpt(unit?.kode_klasifikasi ?? null)}
       />
     </div>
   );

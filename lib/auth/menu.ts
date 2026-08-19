@@ -98,8 +98,14 @@ export function berandaUntukPeran(peran: Peran): string {
  * Cocok bila pathname sama persis ATAU merupakan sub-rute di bawahnya,
  * supaya /penugasan/terbitkan/langkah-2 kelak ikut terjaga.
  */
-const RUTE_KHUSUS_PERAN: { awalan: string; peran: Peran[] }[] = [
-  { awalan: "/penugasan/terbitkan", peran: ["kanit"] },
+const RUTE_KHUSUS_PERAN: { pola: RegExp; peran: Peran[] }[] = [
+  // /penugasan/terbitkan dan turunannya
+  { pola: /^\/penugasan\/terbitkan(\/|$)/, peran: ["kanit"] },
+  // /penugasan/<id>/sunting dan /penugasan/<id>/tim — id di TENGAH,
+  // sehingga pencocokan awalan biasa tidak dapat dipakai. Halamannya
+  // sendiri memeriksa lagi bahwa Kanit itu pemilik unitnya; daftar ini
+  // hanya tahu peran, bukan unit.
+  { pola: /^\/penugasan\/[^/]+\/(sunting|tim)(\/|$)/, peran: ["kanit"] },
 ];
 
 export function bolehAksesRute(peran: Peran, pathname: string): boolean {
@@ -107,9 +113,7 @@ export function bolehAksesRute(peran: Peran, pathname: string): boolean {
     return pathname === "/pemeliharaan";
   }
 
-  const khusus = RUTE_KHUSUS_PERAN.find(
-    (r) => pathname === r.awalan || pathname.startsWith(`${r.awalan}/`),
-  );
+  const khusus = RUTE_KHUSUS_PERAN.find((r) => r.pola.test(pathname));
   if (khusus) {
     return khusus.peran.includes(peran);
   }
