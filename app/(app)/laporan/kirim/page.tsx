@@ -136,6 +136,10 @@ export default async function HalamanKirimLaporan({ searchParams }: ParamHalaman
       <FormulirKirimLaporan
         penugasanId={target.id}
         titikLokasi={lokasi ?? []}
+        lewatBatas={
+          Boolean(target.tanggal_batas) &&
+          new Date(target.tanggal_batas as string) < new Date()
+        }
       />
     </div>
   );

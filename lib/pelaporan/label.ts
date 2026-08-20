@@ -121,24 +121,41 @@ export function jarakRingkas(meter: number | null): string {
  * satu aplikasi, dan mengikuti bahasa kriteria penerimaan KP-6.3-59
  * s/d 61 (mis. "hanya laporan dari SPT yang ia awasi").
  */
+/**
+ * Judul dan subjudul halaman daftar laporan per peran — §6.3.5 tabel
+ * "Daftar laporan", diikuti PERSIS kata demi kata (beda dari
+ * JUDUL_DAFTAR pada lib/penugasan/label.ts yang untuk Modul 6.2):
+ *
+ *   Anggota  -> Riwayat Laporan
+ *   Panit    -> Review Laporan
+ *   Kanit    -> Semua Laporan (dengan rekap Belum Melapor di kepala)
+ *   Kasubdit -> Semua Laporan (dengan penyaring unit)
+ *
+ * Anggota dan Panit sebenarnya membaca kata "Riwayat Laporan" dan
+ * "Review Laporan" di sini juga meski Anggota punya rute
+ * /laporan/riwayat tersendiri (KP-6.3-59) — halaman /laporan biasa
+ * untuk Anggota tetap ada dan menampilkan lingkup yang sama (laporan
+ * miliknya sendiri) via RLS, hanya tanpa yang ditarik tersaring
+ * default; /laporan/riwayat adalah versi "termasuk yang ditarik".
+ */
 export const JUDUL_DAFTAR_LAPORAN: Record<
   string,
   { judul: string; sub: string }
 > = {
   anggota: {
     judul: "Laporan Saya",
-    sub: "Laporan kegiatan yang sudah Anda kirim, termasuk yang ditarik.",
+    sub: "Laporan kegiatan yang sudah Anda kirim.",
   },
   panit: {
-    judul: "Laporan yang Saya Tinjau",
+    judul: "Review Laporan",
     sub: "Laporan dari SPT yang Anda awasi. Yang belum bercatatan tampil lebih dulu.",
   },
   kanit: {
-    judul: "Laporan Unit",
+    judul: "Semua Laporan",
     sub: "Laporan kegiatan dari seluruh penugasan pada unit Anda.",
   },
   kasubdit: {
-    judul: "Seluruh Laporan",
+    judul: "Semua Laporan",
     sub: "Laporan kegiatan lintas unit pada Subdit IV.",
   },
 };

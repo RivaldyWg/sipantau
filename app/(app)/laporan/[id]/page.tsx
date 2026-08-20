@@ -17,6 +17,9 @@ import type {
   LaporanHarianRow,
   LaporanVersiRow,
 } from "@/lib/supabase/types";
+import { GaleriFoto } from "@/components/sipantau/galeri-foto";
+import { PetaTitik } from "@/components/sipantau/peta-titik";
+import { UnggahFoto } from "@/components/sipantau/unggah-foto";
 import { PanelLaporan } from "./panel-laporan";
 
 /**
@@ -54,50 +57,57 @@ export default async function HalamanRincianLaporan({ params }: ParamHalaman) {
 
   if (!laporan) notFound();
 
-  const [spt, pelapor, lokasi, lokasiTerdekat, catatanMentah, versi] = await Promise.all([
-    supabase
-      .from("penugasan")
-      .select("id, nomor_spt, judul, unit_id, status")
-      .eq("id", laporan.penugasan_id)
-      .maybeSingle<{
-        id: string;
-        nomor_spt: string | null;
-        judul: string;
-        unit_id: string;
-        status: string;
-      }>(),
-    supabase
-      .from("users")
-      .select("nama, nrp, pangkat")
-      .eq("id", laporan.pelapor_id)
-      .maybeSingle<{ nama: string; nrp: string; pangkat: string | null }>(),
-    laporan.lokasi_id
-      ? supabase
-          .from("penugasan_lokasi")
-          .select("nama")
-          .eq("id", laporan.lokasi_id)
-          .maybeSingle<{ nama: string }>()
-      : Promise.resolve({ data: null }),
-    laporan.lokasi_id_terdekat
-      ? supabase
-          .from("penugasan_lokasi")
-          .select("nama")
-          .eq("id", laporan.lokasi_id_terdekat)
-          .maybeSingle<{ nama: string }>()
-      : Promise.resolve({ data: null }),
-    supabase
-      .from("catatan_laporan")
-      .select("*")
-      .eq("laporan_id", id)
-      .order("dibuat_pada")
-      .returns<CatatanLaporanRow[]>(),
-    supabase
-      .from("laporan_versi")
-      .select("*")
-      .eq("laporan_id", id)
-      .order("dibuat_pada", { ascending: false })
-      .returns<LaporanVersiRow[]>(),
-  ]);
+  const [spt, pelapor, lokasi, lokasiTerdekat, catatanMentah, versi, fotoMentah] =
+    await Promise.all([
+      supabase
+        .from("penugasan")
+        .select("id, nomor_spt, judul, unit_id, status")
+        .eq("id", laporan.penugasan_id)
+        .maybeSingle<{
+          id: string;
+          nomor_spt: string | null;
+          judul: string;
+          unit_id: string;
+          status: string;
+        }>(),
+      supabase
+        .from("users")
+        .select("nama, nrp, pangkat")
+        .eq("id", laporan.pelapor_id)
+        .maybeSingle<{ nama: string; nrp: string; pangkat: string | null }>(),
+      laporan.lokasi_id
+        ? supabase
+            .from("penugasan_lokasi")
+            .select("nama")
+            .eq("id", laporan.lokasi_id)
+            .maybeSingle<{ nama: string }>()
+        : Promise.resolve({ data: null }),
+      laporan.lokasi_id_terdekat
+        ? supabase
+            .from("penugasan_lokasi")
+            .select("nama")
+            .eq("id", laporan.lokasi_id_terdekat)
+            .maybeSingle<{ nama: string }>()
+        : Promise.resolve({ data: null }),
+      supabase
+        .from("catatan_laporan")
+        .select("*")
+        .eq("laporan_id", id)
+        .order("dibuat_pada")
+        .returns<CatatanLaporanRow[]>(),
+      supabase
+        .from("laporan_versi")
+        .select("*")
+        .eq("laporan_id", id)
+        .order("dibuat_pada", { ascending: false })
+        .returns<LaporanVersiRow[]>(),
+      supabase
+        .from("foto_dokumentasi")
+        .select("*")
+        .eq("laporan_id", id)
+        .order("dibuat_pada")
+        .returns<import("@/lib/supabase/types").FotoDokumentasiRow[]>(),
+    ]);
 
   const daftarCatatan = catatanMentah.data ?? [];
   const idPeninjau = [...new Set(daftarCatatan.map((c) => c.peninjau_id))];
@@ -124,6 +134,14 @@ export default async function HalamanRincianLaporan({ params }: ParamHalaman) {
     (pengguna.peran === "panit" && !akuPelapor);
   const terkunci =
     laporan.status_laporan === "disetujui" || laporan.status_laporan === "ditarik";
+
+  // §6.3.5: "peta kecil dengan pin bernomor untuk tiap foto
+  // berkoordinat; foto tanpa koordinat dalam kelompok terpisah di
+  // bawah peta." BR-42: koordinat foto TIDAK PERNAH dari laporan induk
+  // — dipisah murni berdasarkan lat/lng milik foto itu sendiri.
+  const semuaFoto = fotoMentah.data ?? [];
+  const fotoBerkoordinat = semuaFoto.filter((f) => f.lat !== null && f.lng !== null);
+  const fotoTanpaKoordinat = semuaFoto.filter((f) => f.lat === null || f.lng === null);
 
   return (
     <div className="flex flex-col gap-5">
@@ -239,6 +257,52 @@ export default async function HalamanRincianLaporan({ params }: ParamHalaman) {
               </Butir>
             )}
           </dl>
+        )}
+      </section>
+
+      {/* §6.3.5: peta pin bernomor untuk foto berkoordinat, foto tanpa
+          koordinat di kelompok terpisah di bawahnya. */}
+      <section className="rounded-lg border border-border bg-card p-4">
+        <h2 className="mb-3 text-sm font-semibold text-foreground">
+          Foto dokumentasi ({semuaFoto.length})
+        </h2>
+
+        {fotoBerkoordinat.length > 0 && (
+          <div className="mb-4">
+            <PetaTitik
+              titik={fotoBerkoordinat.map((f, i) => ({
+                nama: f.keterangan ?? `Foto ${i + 1}`,
+                lat: f.lat,
+                lng: f.lng,
+                radius_meter: null,
+              }))}
+              tinggi={220}
+            />
+            <div className="mt-2">
+              <GaleriFoto foto={fotoBerkoordinat} bolehHapus={akuPelapor && !terkunci} />
+            </div>
+          </div>
+        )}
+
+        {fotoTanpaKoordinat.length > 0 && (
+          <div>
+            {fotoBerkoordinat.length > 0 && (
+              <h3 className="mb-2 text-xs font-medium text-muted-foreground">
+                Tanpa koordinat
+              </h3>
+            )}
+            <GaleriFoto foto={fotoTanpaKoordinat} bolehHapus={akuPelapor && !terkunci} />
+          </div>
+        )}
+
+        {semuaFoto.length === 0 && (
+          <p className="text-sm text-muted-foreground">Belum ada foto dokumentasi.</p>
+        )}
+
+        {akuPelapor && !terkunci && (
+          <div className="mt-4 border-t border-border pt-4">
+            <UnggahFoto laporanId={id} />
+          </div>
         )}
       </section>
 

@@ -22,6 +22,9 @@ import {
   type DrafLaporan,
 } from "@/lib/pelaporan/antrean-luring";
 import { kirimLaporan, type MasukanKirimLaporan } from "../aksi";
+import { tandaiBermasalah } from "../../penugasan/[id]/aksi";
+import { LABEL_JENIS_MASALAH } from "@/lib/penugasan/label";
+import type { JenisMasalah } from "@/lib/supabase/types";
 
 /**
  * Formulir Kirim Laporan — KP-6.3-01 s/d 25, KP-6.3-11 s/d 15 (draf).
@@ -63,9 +66,11 @@ type StatusGeo = "mencoba" | "berhasil" | "gagal" | "tidak_didukung";
 export function FormulirKirimLaporan({
   penugasanId,
   titikLokasi,
+  lewatBatas,
 }: {
   penugasanId: string;
   titikLokasi: TitikLokasi[];
+  lewatBatas: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -95,6 +100,20 @@ export function FormulirKirimLaporan({
   } | null>(null);
 
   const [draftMuat, setDraftMuat] = useState(false);
+
+  // §6.3.5: memilih status kegiatan "bermasalah" TIDAK langsung
+  // menyimpan — sistem membuka penuntun Tandai Bermasalah milik
+  // Modul 6.2 supaya jenis masalah dan uraiannya terisi lewat satu
+  // pintu yang sama (tabel penugasan_masalah, bukan kolom terpisah di
+  // laporan_harian). "sudahBermasalah" mengizinkan status_kegiatan
+  // benar-benar berpindah begitu penuntunnya selesai diisi — tanpa
+  // penanda ini, memilih ulang "bermasalah" tanpa mengisi penuntun
+  // akan diam-diam tersimpan sebagai status_kegiatan=bermasalah tanpa
+  // baris penugasan_masalah yang menyertainya.
+  const [bukaPenuntunBermasalah, setBukaPenuntunBermasalah] = useState(false);
+  const [sudahTandaiBermasalah, setSudahTandaiBermasalah] = useState(false);
+  const [pendingTandai, startTransitionTandai] = useTransition();
+  const [errorTandai, setErrorTandai] = useState<string | null>(null);
 
   // --- Ambil geolokasi begitu formulir terbuka. Kegagalan TIDAK
   // menghalangi apa pun — hanya memindahkan formulir ke mode alasan
@@ -268,7 +287,107 @@ export function FormulirKirimLaporan({
   }
 
   return (
-    <form onSubmit={kirim} className="flex flex-col gap-5" noValidate>
+    <>
+      {bukaPenuntunBermasalah && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-lg border border-border bg-card p-4 shadow-lg">
+            <h2 className="mb-1 text-sm font-semibold text-foreground">
+              Tandai bermasalah
+            </h2>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Menandai status kegiatan sebagai bermasalah mencatat keadaan ini
+              pada penugasan (bukan hanya pada laporan ini). Kegiatan tidak
+              dihentikan.
+            </p>
+
+            {errorTandai && (
+              <p className="mb-3 rounded-md border border-[var(--red)] bg-[var(--red-bg)] px-3 py-2 text-xs text-[var(--red)]">
+                {errorTandai}
+              </p>
+            )}
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setErrorTandai(null);
+                const fd = new FormData(e.currentTarget);
+                startTransitionTandai(async () => {
+                  try {
+                    const h = await tandaiBermasalah(penugasanId, fd);
+                    if (!h.ok) {
+                      setErrorTandai(h.error);
+                      return;
+                    }
+                    setSudahTandaiBermasalah(true);
+                    setStatusKegiatan("bermasalah");
+                    setBukaPenuntunBermasalah(false);
+                  } catch {
+                    setErrorTandai("Tidak dapat menghubungi server.");
+                  }
+                });
+              }}
+              className="flex flex-col gap-3"
+            >
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-foreground">
+                  Jenis masalah <span className="text-[var(--red)]">*</span>
+                </span>
+                <select
+                  name="jenis_masalah"
+                  required
+                  className={KELAS_INPUT}
+                  disabled={pendingTandai}
+                >
+                  <option value="">Pilih jenis masalah…</option>
+                  {Object.entries(LABEL_JENIS_MASALAH).map(([n, l]) => (
+                    <option key={n} value={n as JenisMasalah}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-foreground">
+                  Uraian keadaan <span className="text-[var(--red)]">*</span>
+                </span>
+                <textarea
+                  name="uraian"
+                  required
+                  rows={3}
+                  placeholder="Terangkan keadaan yang ditemui di lapangan."
+                  className={`${KELAS_INPUT} h-auto py-2`}
+                  disabled={pendingTandai}
+                />
+              </label>
+
+              <div className="flex gap-2">
+                <Button type="submit" disabled={pendingTandai}>
+                  {pendingTandai ? "Mencatat…" : "Catat keadaan"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={pendingTandai}
+                  onClick={() => setBukaPenuntunBermasalah(false)}
+                >
+                  Batal
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={kirim} className="flex flex-col gap-5" noValidate>
+      {/* §6.3.5, KP-6.3-03: peringatan tampil, pengiriman TETAP diizinkan. */}
+      {lewatBatas && (
+        <p className="rounded-md border border-[var(--amber)] bg-[var(--amber-bg)] px-3 py-2 text-sm text-[var(--amber)]">
+          Penugasan ini sudah melewati tanggal batas. Laporan tetap dapat
+          dikirim.
+        </p>
+      )}
+
       {draftMuat && (
         <p className="rounded-md border border-border bg-secondary px-3 py-2 text-xs text-secondary-foreground">
           Draf sebelumnya untuk penugasan ini dimuat ulang.
@@ -306,9 +425,18 @@ export function FormulirKirimLaporan({
           <Bidang label="Status kegiatan">
             <select
               value={statusKegiatan}
-              onChange={(e) =>
-                setStatusKegiatan(e.target.value as StatusKegiatanLaporan)
-              }
+              onChange={(e) => {
+                const nilai = e.target.value as StatusKegiatanLaporan;
+                if (nilai === "bermasalah" && !sudahTandaiBermasalah) {
+                  // Belum diset — dibuka penuntunnya dulu, select
+                  // tetap menampilkan nilai LAMA sampai penuntun
+                  // selesai (lihat value={statusKegiatan} di bawah,
+                  // bukan {nilai}).
+                  setBukaPenuntunBermasalah(true);
+                  return;
+                }
+                setStatusKegiatan(nilai);
+              }}
               className={KELAS_INPUT}
               disabled={pending}
             >
@@ -434,6 +562,25 @@ export function FormulirKirimLaporan({
         )}
       </section>
 
+      {/* §6.3.5: "Panel Sebelum Mengirim pada prototype dipertahankan,
+          tetapi butir ketiganya diganti. Kalimat 'Laporan yang
+          terkirim tidak dapat diubah' sudah tidak benar; penggantinya
+          menerangkan bahwa laporan masih dapat diperbaiki sampai
+          disetujui Kanit." */}
+      <section className="rounded-lg border border-border bg-secondary p-4">
+        <h2 className="mb-2 text-xs font-semibold text-secondary-foreground">
+          Sebelum mengirim
+        </h2>
+        <ul className="flex flex-col gap-1 text-xs text-secondary-foreground">
+          <li>• Pastikan uraian kegiatan sudah menggambarkan yang sebenarnya terjadi.</li>
+          <li>• Foto dapat ditambahkan setelah laporan terkirim, dari halaman rincian.</li>
+          <li>
+            • Laporan masih dapat disunting sampai disetujui Kanit atau sampai
+            SPT ditutup — bukan langsung terkunci begitu terkirim.
+          </li>
+        </ul>
+      </section>
+
       <div className="flex flex-wrap gap-3">
         <Button type="submit" disabled={pending}>
           {pending ? "Mengirim…" : "Kirim Laporan"}
@@ -453,7 +600,8 @@ export function FormulirKirimLaporan({
         termasuk pimpinan. Draf akan hilang bila data aplikasi dibersihkan atau
         aplikasi dipasang ulang.
       </p>
-    </form>
+      </form>
+    </>
   );
 }
 
