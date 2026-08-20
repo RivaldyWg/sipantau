@@ -193,3 +193,138 @@ export interface PenugasanMasalahRow {
   dipulihkan_pada: string | null;
   alasan_pemulihan: string | null;
 }
+
+/* =====================================================================
+ * Modul 6.3 — Pelaporan Kegiatan Harian & Foto (Langkah 7)
+ *
+ * Mengikuti kolom pada migrasi 0017_modul_6_3_pelaporan.sql.
+ * Rujukan: docs/30-modul-6.3-pelaporan.md §5.4, §5.19, Addendum 6.3-T,
+ * Addendum 6.3-K, docs/01-koreksi.md I.2/I.13/I.14.
+ * ===================================================================== */
+
+export type JenisLaporan = "pulbaket_awal" | "perkembangan" | "akhir";
+
+export type StatusKegiatanLaporan = "berjalan" | "selesai" | "bermasalah";
+
+export type StatusLokasiLaporan =
+  | "terverifikasi"
+  | "di_luar_titik"
+  | "tidak_terekam";
+
+/**
+ * Daftar SEMENTARA — Lampiran A butir A-05 sebenarnya sudah terjawab
+ * dan FINAL (tujuh nilai ini), tidak seperti A-11 (jenis masalah)
+ * yang masih benar-benar sementara. Ditulis di sini apa adanya sesuai
+ * migrasi; jangan menambah nilai tanpa mengubah CHECK di migrasi 0017
+ * lebih dulu.
+ */
+export type AlasanLokasiTidakTerekam =
+  | "gps_tidak_tertangkap"
+  | "daya_habis"
+  | "izin_lokasi_mati"
+  | "area_terbatas"
+  | "disusun_setelah_pulang"
+  | "perangkat_rusak"
+  | "lainnya";
+
+export type StatusLaporan =
+  | "terkirim"
+  | "perlu_diperbaiki"
+  | "disetujui"
+  | "ditarik";
+
+export interface LaporanHarianRow {
+  id: string;
+  penugasan_id: string;
+  pelapor_id: string;
+  sesi_tugas_id: string | null;
+  jenis: JenisLaporan;
+  uraian: string;
+  kendala: string | null;
+  status_kegiatan: StatusKegiatanLaporan;
+
+  // Kolom lokasi — BEKU setelah INSERT (Addendum 6.3-T Celah 1/4).
+  lokasi_lat: number | null;
+  lokasi_lng: number | null;
+  akurasi_meter: number | null;
+  status_lokasi: StatusLokasiLaporan | null;
+  lokasi_id: string | null;
+  lokasi_id_terdekat: string | null;
+  jarak_meter: number | null;
+  alasan_lokasi: AlasanLokasiTidakTerekam | null;
+  alasan_lokasi_lainnya: string | null;
+  keterangan_lokasi: string | null;
+
+  status_laporan: StatusLaporan;
+  disetujui_oleh: string | null;
+  disetujui_pada: string | null;
+  ditarik_pada: string | null;
+  alasan_penarikan: string | null;
+
+  disunting_pada: string | null;
+  jumlah_suntingan: number;
+
+  // Antrean Luring — BR-45 s/d BR-48.
+  antrean_id: string;
+  direkam_pada: string;
+  diterima_terlambat: boolean;
+  penanda_perangkat: string;
+  penanda_perangkat_asal: string | null;
+
+  dikirim_pada: string;
+}
+
+export type JenisCatatanLaporan = "catatan" | "minta_perbaikan";
+
+export interface CatatanLaporanRow {
+  id: string;
+  laporan_id: string;
+  peninjau_id: string;
+  jenis: JenisCatatanLaporan;
+  isi: string;
+  dibuat_pada: string;
+  disunting_pada: string | null;
+}
+
+/**
+ * [KERANGKA — final di Modul 6.7]. Hanya kolom final BR-42 yang ada
+ * di migrasi 0017. Jangan tambahkan field lain (sumber, tanda_air_*)
+ * di sini sebelum migrasi yang menambahkannya benar-benar ada.
+ */
+export interface FotoDokumentasiRow {
+  id: string;
+  laporan_id: string | null;
+  penugasan_id: string;
+  diunggah_oleh: string;
+  berkas_path: string;
+  keterangan: string | null;
+  lat: number | null;
+  lng: number | null;
+  akurasi_meter: number | null;
+  diambil_pada: string | null;
+  dibuat_pada: string;
+}
+
+export interface LaporanVersiRow {
+  id: string;
+  laporan_id: string | null;
+  catatan_id: string | null;
+  isi_lama: string;
+  disunting_oleh: string;
+  dibuat_pada: string;
+}
+
+/** Baris view rekap_laporan_tim — KP-6.3-58, hanya tiga kolom aman. */
+export interface RekapLaporanTimRow {
+  penugasan_id: string;
+  pelapor_id: string;
+  direkam_pada: string;
+}
+
+/** Baris view v_belum_lapor — dihitung dinamis, tidak disimpan. */
+export interface BelumLaporRow {
+  penugasan_id: string;
+  pelaksana_id: string;
+  unit_id: string;
+  nomor_spt: string | null;
+}

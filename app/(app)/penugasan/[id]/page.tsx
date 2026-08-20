@@ -175,12 +175,28 @@ export default async function HalamanRincianSpt({ params }: ParamHalaman) {
           )}
         </div>
 
-        <Link
-          href="/penugasan"
-          className="inline-flex h-10 items-center rounded-md border border-input px-4 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
-        >
-          Kembali
-        </Link>
+        <div className="flex gap-2">
+          {/* Modul 6.3, KP-6.3-01/04: hanya tampil bila pengguna
+              pelaksana aktif DAN SPT masih menerima laporan — dua
+              syarat yang sama persis dijaga ulang oleh halaman
+              /laporan/kirim itu sendiri (bukan hanya disembunyikan
+              di sini, BR-11). */}
+          {akuPelaksana &&
+            ["baru", "berjalan", "bermasalah"].includes(spt.status) && (
+              <Link
+                href={`/laporan/kirim?penugasan=${id}`}
+                className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                Kirim Laporan
+              </Link>
+            )}
+          <Link
+            href="/penugasan"
+            className="inline-flex h-10 items-center rounded-md border border-input px-4 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+          >
+            Kembali
+          </Link>
+        </div>
       </div>
 
       <PanelTindakan

@@ -36,7 +36,7 @@ const MENU_PER_PERAN: Record<Exclude<Peran, "pemeliharaan">, ButirMenu[]> = {
     { label: "Beranda", href: "/beranda" },
     { label: "Daftar SPT", href: "/penugasan", cocokAwalan: true },
     { label: "Peta Tracking", href: "/peta" },
-    { label: "Laporan", href: "/laporan" },
+    { label: "Laporan", href: "/laporan", cocokAwalan: true },
     { label: "LHP Ringkas", href: "/laporan/lhp-ringkas" },
     { label: "Manajemen User", href: "/akun" },
     { label: "Daftar Unit", href: "/akun/unit" },
@@ -46,21 +46,21 @@ const MENU_PER_PERAN: Record<Exclude<Peran, "pemeliharaan">, ButirMenu[]> = {
     { label: "Daftar SPT", href: "/penugasan", cocokAwalan: true },
     { label: "Terbitkan SPT", href: "/penugasan/terbitkan" },
     { label: "Peta Tracking", href: "/peta" },
-    { label: "Laporan", href: "/laporan" },
+    { label: "Laporan", href: "/laporan", cocokAwalan: true },
     { label: "LHP Ringkas", href: "/laporan/lhp-ringkas" },
   ],
   panit: [
     { label: "Beranda", href: "/beranda" },
     { label: "Daftar SPT", href: "/penugasan", cocokAwalan: true },
     { label: "Peta Tracking", href: "/peta" },
-    { label: "Laporan", href: "/laporan" },
+    { label: "Laporan", href: "/laporan", cocokAwalan: true },
     { label: "LHP Ringkas", href: "/laporan/lhp-ringkas" },
   ],
   anggota: [
     { label: "Beranda", href: "/beranda" },
     { label: "Daftar SPT", href: "/penugasan", cocokAwalan: true },
     { label: "Peta Tracking", href: "/peta" },
-    { label: "Laporan", href: "/laporan" },
+    { label: "Laporan", href: "/laporan", cocokAwalan: true },
     { label: "LHP Ringkas", href: "/laporan/lhp-ringkas" },
   ],
 };
@@ -106,6 +106,16 @@ const RUTE_KHUSUS_PERAN: { pola: RegExp; peran: Peran[] }[] = [
   // sendiri memeriksa lagi bahwa Kanit itu pemilik unitnya; daftar ini
   // hanya tahu peran, bukan unit.
   { pola: /^\/penugasan\/[^/]+\/(sunting|tim)(\/|$)/, peran: ["kanit"] },
+  // /laporan/belum-lapor — KP-6.3-51: hanya Kanit dan Kasubdit yang
+  // punya kepentingan melihat siapa belum melapor. Anggota/Panit yang
+  // datang lewat tautan langsung dipentalkan; halaman itu sendiri juga
+  // redirect sebagai lapis kedua (pola dua-lapis yang sama seperti
+  // Modul 6.2).
+  { pola: /^\/laporan\/belum-lapor(\/|$)/, peran: ["kanit", "kasubdit"] },
+  // /laporan/riwayat — KP-6.3-59: khusus Anggota (laporan miliknya
+  // sendiri, termasuk yang ditarik). Peran lain memakai halaman
+  // /laporan biasa untuk melihat laporan yang berada dalam lingkupnya.
+  { pola: /^\/laporan\/riwayat(\/|$)/, peran: ["anggota"] },
 ];
 
 export function bolehAksesRute(peran: Peran, pathname: string): boolean {
